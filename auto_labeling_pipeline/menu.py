@@ -1,6 +1,6 @@
 from typing import List, Type
 
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 
 from auto_labeling_pipeline import mappings as mp
 from auto_labeling_pipeline import models as mo
@@ -13,9 +13,7 @@ class Option(BaseModel):
     task: Type[t.Task]
     model: Type[mo.RequestModel]
     template: Type[mp.MappingTemplate]
-
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def to_dict(self):
         return {

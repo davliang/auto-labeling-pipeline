@@ -3,14 +3,19 @@ import os
 import pytest
 import vcr
 
-from auto_labeling_pipeline.models import (AmazonComprehendSentimentRequestModel,
-                                           AmazonRekognitionLabelDetectionRequestModel, GCPEntitiesRequestModel,
-                                           GCPImageLabelDetectionRequestModel, GCPSpeechToTextRequestModel,
-                                           RequestModel, RequestModelFactory)
+from auto_labeling_pipeline.models import (
+    AmazonComprehendSentimentRequestModel,
+    AmazonRekognitionLabelDetectionRequestModel,
+    GCPEntitiesRequestModel,
+    GCPImageLabelDetectionRequestModel,
+    GCPSpeechToTextRequestModel,
+    RequestModel,
+    RequestModelFactory,
+)
 
 
 def test_find_model():
-    model = RequestModelFactory.find('Amazon Comprehend Sentiment Analysis')
+    model = RequestModelFactory.find("Amazon Comprehend Sentiment Analysis")
     assert model == AmazonComprehendSentimentRequestModel
 
 
@@ -20,86 +25,88 @@ def test_request_model_raises_type_error_on_instantiation():
 
 
 def test_request_model_factory_creates_model_correctly():
-    model = GCPEntitiesRequestModel(
-        key='lorem',
-        type='PLAIN_TEXT',
-        language='en'
-    )
-    model_name = model.Config.title
-    attributes = model.dict()
+    model = GCPEntitiesRequestModel(key="lorem", type="PLAIN_TEXT", language="en")
+    model_name = model.model_config.get("title")
+    attributes = model.model_dump()
     restored_model = RequestModelFactory.create(model_name, attributes)
     assert restored_model == model
 
 
 def test_request_model_factory_raises_exception_if_model_does_not_exist():
     with pytest.raises(NameError):
-        RequestModelFactory.create('NotExistModel', {})
+        RequestModelFactory.create("NotExistModel", {})
 
 
 def test_gcp_entities_request(cassettes_path):
-    with vcr.use_cassette(str(cassettes_path / 'gcp_entities.yaml'), mode='once', filter_query_parameters=['key']):
-        model = GCPEntitiesRequestModel(key=os.environ.get('API_KEY_GCP', ''), type='PLAIN_TEXT', language='en')
-        response = model.send(text='Google, headquartered in Mountain View')
-        assert 'entities' in response
+    with vcr.use_cassette(
+        str(cassettes_path / "gcp_entities.yaml"),
+        mode="once",
+        filter_query_parameters=["key"],
+    ):
+        model = GCPEntitiesRequestModel(
+            key=os.environ.get("API_KEY_GCP", ""), type="PLAIN_TEXT", language="en"
+        )
+        response = model.send(text="Google, headquartered in Mountain View")
+        assert "entities" in response
 
 
 def test_gcp_image_label_detection(data_path, cassettes_path):
     with vcr.use_cassette(
-            str(cassettes_path / 'gcp_label_detection.yaml'),
-            mode='once',
-            filter_query_parameters=['key']
+        str(cassettes_path / "gcp_label_detection.yaml"),
+        mode="once",
+        filter_query_parameters=["key"],
     ):
         model = GCPImageLabelDetectionRequestModel(
-            key=os.environ.get('API_KEY_GCP', '')
+            key=os.environ.get("API_KEY_GCP", "")
         )
-        filepath = data_path / 'images/1500x500.jpeg'
+        filepath = data_path / "images/1500x500.jpeg"
         response = model.send(filepath)
-        assert 'responses' in response
-        assert 'labelAnnotations' in response['responses'][0]
+        assert "responses" in response
+        assert "labelAnnotations" in response["responses"][0]
 
 
 def test_amazon_comprehend_sentiment_request(cassettes_path):
-    with vcr.use_cassette(str(cassettes_path / 'amazon_comprehend_sentiment.yaml'),
-                          mode='once',
-                          filter_headers=['authorization']):
+    with vcr.use_cassette(
+        str(cassettes_path / "amazon_comprehend_sentiment.yaml"),
+        mode="once",
+        filter_headers=["authorization"],
+    ):
         model = AmazonComprehendSentimentRequestModel(
-            aws_access_key=os.environ.get('AWS_ACCESS_KEY', ''),
-            aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY', ''),
-            region_name='us-east-1',
-            language_code='en'
+            aws_access_key=os.environ.get("AWS_ACCESS_KEY", ""),
+            aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY", ""),
+            region_name="us-east-1",
+            language_code="en",
         )
-        response = model.send(text='I am very sad.')
-        assert 'Sentiment' in response
+        response = model.send(text="I am very sad.")
+        assert "Sentiment" in response
 
 
 def test_amazon_rekognition_label_detection(data_path, cassettes_path):
     with vcr.use_cassette(
-            str(cassettes_path / 'amazon_rekognition_label_detection.yaml'),
-            mode='once',
-            filter_headers=['authorization']
+        str(cassettes_path / "amazon_rekognition_label_detection.yaml"),
+        mode="once",
+        filter_headers=["authorization"],
     ):
         model = AmazonRekognitionLabelDetectionRequestModel(
-            aws_access_key=os.environ.get('AWS_ACCESS_KEY', ''),
-            aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY', ''),
-            region_name='us-east-1',
+            aws_access_key=os.environ.get("AWS_ACCESS_KEY", ""),
+            aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY", ""),
+            region_name="us-east-1",
         )
-        filepath = data_path / 'images/1500x500.jpeg'
+        filepath = data_path / "images/1500x500.jpeg"
         response = model.send(filepath)
-        assert 'Labels' in response
+        assert "Labels" in response
 
 
 def test_gcp_speech_to_text(data_path, cassettes_path):
     with vcr.use_cassette(
-            str(cassettes_path / 'gcp_speech_to_text.yaml'),
-            mode='once',
-            filter_query_parameters=['key']
+        str(cassettes_path / "gcp_speech_to_text.yaml"),
+        mode="once",
+        filter_query_parameters=["key"],
     ):
         model = GCPSpeechToTextRequestModel(
-            key=os.environ.get('API_KEY_GCP', ''),
-            language_code='en-US',
-            encoding='MP3'
+            key=os.environ.get("API_KEY_GCP", ""), language_code="en-US", encoding="MP3"
         )
-        filepath = data_path / 'audios/sample.mp3'
+        filepath = data_path / "audios/sample.mp3"
         response = model.send(filepath)
-        assert 'results' in response
-        assert 'alternatives' in response['results'][0]
+        assert "results" in response
+        assert "alternatives" in response["results"][0]

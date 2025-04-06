@@ -5,13 +5,12 @@ from pydantic import BaseModel
 
 
 class Label(BaseModel, abc.ABC):
-
     @abc.abstractmethod
     def included(self, labels: Iterable[str]) -> bool:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def replace(self, mapping: Dict[str, str]) -> 'Label':
+    def replace(self, mapping: Dict[str, str]) -> "Label":
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -19,7 +18,7 @@ class Label(BaseModel, abc.ABC):
         raise NotImplementedError
 
     def __hash__(self):
-        return hash(tuple(self.dict()))
+        return hash(tuple(self.model_dump()))
 
 
 class ClassificationLabel(Label):
@@ -28,7 +27,7 @@ class ClassificationLabel(Label):
     def included(self, labels: Iterable[str]) -> bool:
         return self.label in labels
 
-    def replace(self, mapping: Dict[str, str]) -> 'Label':
+    def replace(self, mapping: Dict[str, str]) -> "Label":
         label = mapping.get(self.label, self.label)
         return ClassificationLabel(label=label)
 
@@ -44,12 +43,10 @@ class SequenceLabel(Label):
     def included(self, labels: Iterable[str]) -> bool:
         return self.label in labels
 
-    def replace(self, mapping: Dict[str, str]) -> 'Label':
+    def replace(self, mapping: Dict[str, str]) -> "Label":
         label = mapping.get(self.label, self.label)
         return SequenceLabel(
-            label=label,
-            start_offset=self.start_offset,
-            end_offset=self.end_offset
+            label=label, start_offset=self.start_offset, end_offset=self.end_offset
         )
 
     def overlap_with(self, other) -> bool:
@@ -66,7 +63,7 @@ class Seq2seqLabel(Label):
     def included(self, labels: Iterable[str]) -> bool:
         return self.text in labels
 
-    def replace(self, mapping: Dict[str, str]) -> 'Label':
+    def replace(self, mapping: Dict[str, str]) -> "Label":
         return self
 
     def overlap_with(self, other) -> bool:
